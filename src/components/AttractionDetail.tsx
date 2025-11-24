@@ -44,7 +44,8 @@ export default function AttractionDetail({ data, setData }: AttractionDetailProp
       visited: newCount > 0
     };
     updateAttraction(cityId!, attractionId!, updates, data);
-    setData(loadData());
+    // 直接使用更新后的 data，确保状态同步
+    setData({ ...data });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
