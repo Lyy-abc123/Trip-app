@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, Video, Plus, X, MapPin, Edit2 } from 'lucide-react';
 import { useState, useRef } from 'react';
-import { AppData, Coordinates } from '../types';
+import { AppData, Coordinates, Attraction } from '../types';
 import { updateAttraction, fileToBase64, loadData, saveData } from '../utils/storage';
 import CoordinateEditor from './CoordinateEditor';
 

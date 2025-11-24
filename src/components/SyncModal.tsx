@@ -3,7 +3,6 @@ import { X, Cloud, CloudOff, Users, Copy, Check, RefreshCw } from 'lucide-react'
 import { AppData } from '../types';
 import { 
   saveToCloud, 
-  loadFromCloud, 
   subscribeToCloud, 
   generateUserId, 
   generateRoomId,
