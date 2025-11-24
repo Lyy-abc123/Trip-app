@@ -88,8 +88,8 @@ function MapBoundsUpdater({ attractions }: MapBoundsUpdaterProps) {
         attractionsWithCoords.map(a => [a.coordinates!.lat, a.coordinates!.lng])
       );
       // 如果只有一个或两个景点，使用更大的 padding
-      const padding: [number, number] = attractionsWithCoords.length <= 2 ? [100, 100] : [50, 50];
-      map.fitBounds(bounds, { padding });
+      const paddingValue = attractionsWithCoords.length <= 2 ? 100 : 50;
+      map.fitBounds(bounds, { padding: [paddingValue, paddingValue] as [number, number] });
     }
   }, [attractions, map]);
 
