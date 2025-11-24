@@ -57,22 +57,25 @@ export function loadData(): AppData {
 // 合并数据（保留用户数据，添加新的默认景点）
 function mergeData(defaultData: AppData, userData: AppData): AppData {
   const merged: AppData = { cities: [] };
+  
+  // 获取用户已删除的默认景点ID列表（从localStorage）
+  const deletedAttractionIds = getDeletedAttractionIds();
 
   // 遍历默认城市
   defaultData.cities.forEach(defaultCity => {
     const userCity = userData.cities.find(c => c.id === defaultCity.id);
     
     if (userCity) {
-      // 合并景点：保留用户数据，添加新的默认景点
+      // 合并景点：保留用户数据，添加新的默认景点（但排除已删除的）
       const mergedAttractions: Attraction[] = [];
       const userAttractionIds = new Set(userCity.attractions.map(a => a.id));
       
       // 添加用户已有的景点
       mergedAttractions.push(...userCity.attractions);
       
-      // 添加默认景点中用户还没有的
+      // 添加默认景点中用户还没有的，且未被删除的
       defaultCity.attractions.forEach(defaultAttraction => {
-        if (!userAttractionIds.has(defaultAttraction.id)) {
+        if (!userAttractionIds.has(defaultAttraction.id) && !deletedAttractionIds.has(defaultAttraction.id)) {
           mergedAttractions.push(defaultAttraction);
         }
       });
@@ -82,8 +85,14 @@ function mergeData(defaultData: AppData, userData: AppData): AppData {
         attractions: mergedAttractions,
       });
     } else {
-      // 用户没有这个城市，直接添加默认城市
-      merged.cities.push(defaultCity);
+      // 用户没有这个城市，添加默认城市（但排除已删除的景点）
+      const filteredAttractions = defaultCity.attractions.filter(
+        attraction => !deletedAttractionIds.has(attraction.id)
+      );
+      merged.cities.push({
+        ...defaultCity,
+        attractions: filteredAttractions,
+      });
     }
   });
 
@@ -95,6 +104,30 @@ function mergeData(defaultData: AppData, userData: AppData): AppData {
   });
 
   return merged;
+}
+
+// 获取已删除的默认景点ID列表
+function getDeletedAttractionIds(): Set<string> {
+  try {
+    const deleted = localStorage.getItem('trip-app-deleted-attractions');
+    if (deleted) {
+      return new Set(JSON.parse(deleted));
+    }
+  } catch (error) {
+    console.error('读取已删除景点列表失败:', error);
+  }
+  return new Set();
+}
+
+// 记录已删除的默认景点ID
+function markAttractionAsDeleted(attractionId: string): void {
+  try {
+    const deleted = getDeletedAttractionIds();
+    deleted.add(attractionId);
+    localStorage.setItem('trip-app-deleted-attractions', JSON.stringify(Array.from(deleted)));
+  } catch (error) {
+    console.error('保存已删除景点列表失败:', error);
+  }
 }
 
 // 保存数据到 localStorage
@@ -179,6 +212,36 @@ export function toggleAttractionVisited(
   }
   attraction.updatedAt = new Date().toISOString();
 
+  saveData(data);
+}
+
+// 删除城市
+export function deleteCity(cityId: string, data: AppData): void {
+  const cityIndex = data.cities.findIndex(c => c.id === cityId);
+  if (cityIndex === -1) throw new Error('城市不存在');
+  
+  data.cities.splice(cityIndex, 1);
+  saveData(data);
+}
+
+// 删除景点
+export function deleteAttraction(cityId: string, attractionId: string, data: AppData): void {
+  const city = data.cities.find(c => c.id === cityId);
+  if (!city) throw new Error('城市不存在');
+
+  const attractionIndex = city.attractions.findIndex(a => a.id === attractionId);
+  if (attractionIndex === -1) throw new Error('景点不存在');
+
+  // 检查是否是默认景点
+  const defaultCity = defaultData.cities.find(c => c.id === cityId);
+  const isDefaultAttraction = defaultCity?.attractions.some(a => a.id === attractionId);
+  
+  // 如果是默认景点，记录到已删除列表
+  if (isDefaultAttraction) {
+    markAttractionAsDeleted(attractionId);
+  }
+
+  city.attractions.splice(attractionIndex, 1);
   saveData(data);
 }
 

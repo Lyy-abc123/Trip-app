@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Video, Plus, X, MapPin, Edit2 } from 'lucide-react';
+import { ArrowLeft, Camera, Video, Plus, X, MapPin, Edit2, Trash2 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { AppData, Coordinates, Attraction } from '../types';
-import { updateAttraction, fileToBase64, loadData, saveData } from '../utils/storage';
+import { updateAttraction, deleteAttraction, fileToBase64, loadData, saveData } from '../utils/storage';
 import CoordinateEditor from './CoordinateEditor';
 
 interface AttractionDetailProps {
@@ -119,18 +119,35 @@ export default function AttractionDetail({ data, setData }: AttractionDetailProp
     }
   };
 
+  const handleDeleteAttraction = () => {
+    if (confirm(`确定要删除景点"${attraction.name}"吗？这将删除该景点的所有数据（包括照片、视频和笔记）。`)) {
+      deleteAttraction(cityId!, attractionId!, data);
+      setData(loadData());
+      navigate(`/city/${cityId}`);
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 pb-20">
       <div className="max-w-4xl mx-auto">
         {/* 头部 */}
         <div className="mb-6">
-          <button
-            onClick={() => navigate(`/city/${cityId}`)}
-            className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>返回</span>
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate(`/city/${cityId}`)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>返回</span>
+            </button>
+            <button
+              onClick={handleDeleteAttraction}
+              className="flex items-center gap-2 text-red-400 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
+              <span>删除景点</span>
+            </button>
+          </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">{attraction.name}</h1>
           <p className="text-gray-600">{city.name}</p>
         </div>

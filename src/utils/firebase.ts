@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, deleteField } from 'firebase/firestore';
 import { AppData } from '../types';
 
 // Firebase 配置（需要用户自己配置）
@@ -138,11 +138,11 @@ export async function acceptSyncRequest(roomId: string, data: AppData, userId: s
     const roomRef = getRoomRef(roomId);
     const roomDoc = await getDoc(roomRef);
     
-    const roomData: RoomData = {
+    const roomData: any = {
       data,
       updatedAt: serverTimestamp(),
       members: roomDoc.exists() ? roomDoc.data().members || [] : [userId],
-      syncRequest: undefined // 清除同步请求
+      syncRequest: deleteField() // 清除同步请求
     };
 
     if (!roomData.members.includes(userId)) {
@@ -160,7 +160,7 @@ export async function acceptSyncRequest(roomId: string, data: AppData, userId: s
 export async function rejectSyncRequest(roomId: string): Promise<void> {
   try {
     const roomRef = getRoomRef(roomId);
-    await setDoc(roomRef, { syncRequest: undefined }, { merge: true });
+    await setDoc(roomRef, { syncRequest: deleteField() }, { merge: true });
   } catch (error) {
     console.error('拒绝同步请求失败:', error);
     throw error;

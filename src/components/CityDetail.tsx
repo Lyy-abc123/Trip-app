@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, MapPin, CheckCircle, Circle, Map, List } from 'lucide-react';
+import { ArrowLeft, Plus, MapPin, CheckCircle, Circle, Map, List, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AppData } from '../types';
-import { toggleAttractionVisited, addAttraction, loadData } from '../utils/storage';
+import { toggleAttractionVisited, addAttraction, deleteAttraction, loadData } from '../utils/storage';
 import AttractionMap from './AttractionMap';
 
 interface CityDetailProps {
@@ -46,6 +46,14 @@ export default function CityDetail({ data, setData }: CityDetailProps) {
       setData(loadData());
       setNewAttractionName('');
       setShowAddAttraction(false);
+    }
+  };
+
+  const handleDeleteAttraction = (attractionId: string, attractionName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止触发点击事件
+    if (confirm(`确定要删除景点"${attractionName}"吗？`)) {
+      deleteAttraction(cityId!, attractionId, data);
+      setData(loadData());
     }
   };
 
@@ -176,9 +184,20 @@ export default function CityDetail({ data, setData }: CityDetailProps) {
                 <div
                   key={attraction.id}
                   onClick={() => navigate(`/city/${cityId}/attraction/${attraction.id}`)}
-                  className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-cute p-4 shadow-cute border-2 border-green-300 hover:border-green-400 cursor-pointer transition-all hover:scale-105"
+                  className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-cute p-4 shadow-cute border-2 border-green-300 hover:border-green-400 cursor-pointer transition-all hover:scale-105 relative"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleDeleteAttraction(attraction.id, attraction.name, e);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-50"
+                    title="删除景点"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center justify-between mb-2 pr-8">
                     <h3 className="text-xl font-bold text-gray-800">{attraction.name}</h3>
                     <CheckCircle className="w-6 h-6 text-green-500" />
                   </div>
@@ -207,10 +226,21 @@ export default function CityDetail({ data, setData }: CityDetailProps) {
               {unvisitedAttractions.map((attraction) => (
                 <div
                   key={attraction.id}
-                  className="bg-gray-50 rounded-cute p-4 shadow-cute border-2 border-gray-200 hover:border-gray-300 transition-all hover:scale-105"
+                  className="bg-gray-50 rounded-cute p-4 shadow-cute border-2 border-gray-200 hover:border-gray-300 transition-all hover:scale-105 relative"
                 >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleDeleteAttraction(attraction.id, attraction.name, e);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors z-50"
+                    title="删除景点"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                   <div 
-                    className="flex items-center justify-between cursor-pointer"
+                    className="flex items-center justify-between cursor-pointer pr-8"
                     onClick={() => navigate(`/city/${cityId}/attraction/${attraction.id}`)}
                   >
                     <div className="flex-1">

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Plus, Heart, Share2, Cloud } from 'lucide-react';
+import { MapPin, Plus, Heart, Share2, Cloud, Trash2 } from 'lucide-react';
 import { AppData } from '../types';
-import { addCity, loadData, saveData } from '../utils/storage';
+import { addCity, deleteCity, loadData, saveData } from '../utils/storage';
 import ShareModal from './ShareModal';
 import SyncModal from './SyncModal';
 import { subscribeToCloud } from '../utils/firebase';
@@ -58,6 +58,14 @@ export default function CityList({ data, setData }: CityListProps) {
   const handleImportData = (importedData: AppData) => {
     saveData(importedData);
     setData(loadData());
+  };
+
+  const handleDeleteCity = (cityId: string, cityName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止触发城市卡片的点击事件
+    if (confirm(`确定要删除城市"${cityName}"吗？这将删除该城市下的所有景点数据。`)) {
+      deleteCity(cityId, data);
+      setData(loadData());
+    }
   };
 
   const totalVisited = data.cities.reduce((sum, city) => {
@@ -169,8 +177,15 @@ export default function CityList({ data, setData }: CityListProps) {
             <div
               key={city.id}
               onClick={() => navigate(`/city/${city.id}`)}
-              className="bg-white rounded-cute p-6 shadow-cute border-2 border-pink-200 hover:border-pink-400 cursor-pointer transition-all hover:scale-105"
+              className="bg-white rounded-cute p-6 shadow-cute border-2 border-pink-200 hover:border-pink-400 cursor-pointer transition-all hover:scale-105 relative"
             >
+              <button
+                onClick={(e) => handleDeleteCity(city.id, city.name, e)}
+                className="absolute top-4 right-4 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="删除城市"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full flex items-center justify-center">
                   <MapPin className="w-6 h-6 text-white" />
