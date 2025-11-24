@@ -16,11 +16,20 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
+// 同步请求
+interface SyncRequest {
+  fromUserId: string;
+  fromUserName?: string;
+  timestamp: any;
+  data: AppData;
+}
+
 // 房间数据结构
 interface RoomData {
   data: AppData;
   updatedAt: any;
   members: string[];
+  syncRequest?: SyncRequest; // 待处理的同步请求
 }
 
 // 获取或创建房间文档引用
@@ -73,6 +82,7 @@ export async function loadFromCloud(roomId: string): Promise<AppData | null> {
 export function subscribeToCloud(
   roomId: string,
   callback: (data: AppData) => void,
+  onSyncRequest?: (request: SyncRequest) => void,
   onError?: (error: Error) => void
 ): () => void {
   const roomRef = getRoomRef(roomId);
@@ -82,6 +92,15 @@ export function subscribeToCloud(
     (snapshot) => {
       if (snapshot.exists()) {
         const roomData = snapshot.data() as RoomData;
+        
+        // 检查是否有同步请求（且不是自己发起的）
+        if (roomData.syncRequest && onSyncRequest) {
+          const currentUserId = generateUserId();
+          if (roomData.syncRequest.fromUserId !== currentUserId) {
+            onSyncRequest(roomData.syncRequest);
+          }
+        }
+        
         callback(roomData.data);
       }
     },
@@ -94,6 +113,58 @@ export function subscribeToCloud(
   );
 
   return unsubscribe;
+}
+
+// 发起同步请求
+export async function requestSync(roomId: string, data: AppData, userId: string): Promise<void> {
+  try {
+    const roomRef = getRoomRef(roomId);
+    const syncRequest: SyncRequest = {
+      fromUserId: userId,
+      timestamp: serverTimestamp(),
+      data
+    };
+    
+    await setDoc(roomRef, { syncRequest }, { merge: true });
+  } catch (error) {
+    console.error('发起同步请求失败:', error);
+    throw error;
+  }
+}
+
+// 接受同步请求
+export async function acceptSyncRequest(roomId: string, data: AppData, userId: string): Promise<void> {
+  try {
+    const roomRef = getRoomRef(roomId);
+    const roomDoc = await getDoc(roomRef);
+    
+    const roomData: RoomData = {
+      data,
+      updatedAt: serverTimestamp(),
+      members: roomDoc.exists() ? roomDoc.data().members || [] : [userId],
+      syncRequest: undefined // 清除同步请求
+    };
+
+    if (!roomData.members.includes(userId)) {
+      roomData.members.push(userId);
+    }
+
+    await setDoc(roomRef, roomData, { merge: true });
+  } catch (error) {
+    console.error('接受同步请求失败:', error);
+    throw error;
+  }
+}
+
+// 拒绝同步请求
+export async function rejectSyncRequest(roomId: string): Promise<void> {
+  try {
+    const roomRef = getRoomRef(roomId);
+    await setDoc(roomRef, { syncRequest: undefined }, { merge: true });
+  } catch (error) {
+    console.error('拒绝同步请求失败:', error);
+    throw error;
+  }
 }
 
 // 生成用户 ID（简单实现，实际应该使用 Firebase Auth）

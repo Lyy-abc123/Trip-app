@@ -38,7 +38,12 @@ export default function AttractionDetail({ data, setData }: AttractionDetailProp
 
   const handleVisitCountChange = (delta: number) => {
     const newCount = Math.max(0, attraction.visitCount + delta);
-    updateAttraction(cityId!, attractionId!, { visitCount: newCount }, data);
+    // 如果访问次数大于0，自动设置为已访问；如果为0，设置为未访问
+    const updates: Partial<Attraction> = {
+      visitCount: newCount,
+      visited: newCount > 0
+    };
+    updateAttraction(cityId!, attractionId!, updates, data);
     setData(loadData());
   };
 

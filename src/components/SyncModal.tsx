@@ -6,7 +6,10 @@ import {
   loadFromCloud, 
   subscribeToCloud, 
   generateUserId, 
-  generateRoomId 
+  generateRoomId,
+  requestSync,
+  acceptSyncRequest,
+  rejectSyncRequest
 } from '../utils/firebase';
 import { saveData } from '../utils/storage';
 
@@ -24,6 +27,7 @@ export default function SyncModal({ data, onDataUpdate, onClose }: SyncModalProp
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [pendingSyncRequest, setPendingSyncRequest] = useState<{fromUserId: string; data: AppData} | null>(null);
 
   // 从 localStorage 读取房间 ID
   useEffect(() => {
@@ -45,29 +49,28 @@ export default function SyncModal({ data, onDataUpdate, onClose }: SyncModalProp
     setError('');
 
     try {
-      // 先尝试加载云端数据
-      const cloudData = await loadFromCloud(targetRoomId);
-      
-      if (cloudData) {
-        // 如果云端有数据，询问是否要同步
-        if (confirm('检测到云端数据，是否要同步到本地？这将覆盖当前数据。')) {
-          saveData(cloudData);
-          onDataUpdate(cloudData);
-        }
-      }
-
-      // 保存当前数据到云端
+      // 保存当前数据到云端（不自动覆盖）
       await saveToCloud(targetRoomId, data, userId);
 
       // 开始监听实时变化
       const unsubscribe = subscribeToCloud(
         targetRoomId,
         (updatedData) => {
-          // 避免自己触发的变化
-          saveData(updatedData);
-          onDataUpdate(updatedData);
-          setLastSyncTime(new Date());
+          // 只有在没有待处理的同步请求时才自动同步
+          // 避免自动覆盖用户数据
+          if (!pendingSyncRequest) {
+            saveData(updatedData);
+            onDataUpdate(updatedData);
+            setLastSyncTime(new Date());
+          }
           setIsConnected(true);
+        },
+        (syncRequest) => {
+          // 收到同步请求
+          setPendingSyncRequest({
+            fromUserId: syncRequest.fromUserId,
+            data: syncRequest.data
+          });
         },
         (err) => {
           setError(`同步错误: ${err.message}`);
@@ -139,6 +142,52 @@ export default function SyncModal({ data, onDataUpdate, onClose }: SyncModalProp
     }
   };
 
+  const handleRequestSync = async () => {
+    if (!roomId) return;
+    
+    setIsSyncing(true);
+    setError('');
+    
+    try {
+      await requestSync(roomId, data, userId);
+      setIsSyncing(false);
+      alert('同步请求已发送，等待对方确认...');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '发送同步请求失败');
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAcceptSync = async () => {
+    if (!roomId || !pendingSyncRequest) return;
+    
+    setIsSyncing(true);
+    setError('');
+    
+    try {
+      await acceptSyncRequest(roomId, pendingSyncRequest.data, userId);
+      saveData(pendingSyncRequest.data);
+      onDataUpdate(pendingSyncRequest.data);
+      setPendingSyncRequest(null);
+      setLastSyncTime(new Date());
+      setIsSyncing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '接受同步失败');
+      setIsSyncing(false);
+    }
+  };
+
+  const handleRejectSync = async () => {
+    if (!roomId) return;
+    
+    try {
+      await rejectSyncRequest(roomId);
+      setPendingSyncRequest(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '拒绝同步失败');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-cute shadow-xl border-2 border-pink-200 max-w-2xl w-full">
@@ -162,6 +211,34 @@ export default function SyncModal({ data, onDataUpdate, onClose }: SyncModalProp
 
         {/* 内容 */}
         <div className="p-6 space-y-6">
+          {/* 同步请求提示 */}
+          {pendingSyncRequest && (
+            <div className="p-4 bg-yellow-50 rounded-lg border-2 border-yellow-300 mb-4">
+              <p className="font-semibold text-yellow-800 mb-2">
+                🔔 收到同步请求
+              </p>
+              <p className="text-sm text-yellow-700 mb-3">
+                对方请求将他们的数据同步到您的设备，这将覆盖您当前的数据。
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAcceptSync}
+                  disabled={isSyncing}
+                  className="flex-1 bg-green-400 text-white py-2 rounded-lg hover:bg-green-500 disabled:opacity-50 transition-colors font-semibold"
+                >
+                  接受同步
+                </button>
+                <button
+                  onClick={handleRejectSync}
+                  disabled={isSyncing}
+                  className="flex-1 bg-red-400 text-white py-2 rounded-lg hover:bg-red-500 disabled:opacity-50 transition-colors font-semibold"
+                >
+                  拒绝
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 连接状态 */}
           <div className={`p-4 rounded-lg border-2 ${
             isConnected 
@@ -246,14 +323,27 @@ export default function SyncModal({ data, onDataUpdate, onClose }: SyncModalProp
                 </p>
               </div>
 
-              <button
-                onClick={handleManualSync}
-                disabled={isSyncing}
-                className="w-full bg-purple-400 text-white py-3 rounded-lg hover:bg-purple-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 font-semibold"
-              >
-                <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? '同步中...' : '手动同步'}
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={handleRequestSync}
+                  disabled={isSyncing}
+                  className="w-full bg-blue-400 text-white py-3 rounded-lg hover:bg-blue-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? '发送中...' : '请求同步（发送给伴侣）'}
+                </button>
+                <button
+                  onClick={handleManualSync}
+                  disabled={isSyncing}
+                  className="w-full bg-purple-400 text-white py-3 rounded-lg hover:bg-purple-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? '同步中...' : '直接同步（立即覆盖）'}
+                </button>
+                <p className="text-xs text-gray-500 text-center">
+                  💡 "请求同步"会先发送请求，对方确认后才同步；"直接同步"会立即覆盖对方数据
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
