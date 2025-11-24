@@ -69,8 +69,8 @@ const createCustomIcon = (visited: boolean, visitCount: number) => {
       </style>
     `,
     iconSize: [40, 48] as [number, number],
-    iconAnchor: [20, 48],
-    popupAnchor: [0, -48],
+    iconAnchor: [20, 48] as [number, number],
+    popupAnchor: [0, -48] as [number, number],
   });
 };
 
@@ -88,7 +88,7 @@ function MapBoundsUpdater({ attractions }: MapBoundsUpdaterProps) {
         attractionsWithCoords.map(a => [a.coordinates!.lat, a.coordinates!.lng])
       );
       // 如果只有一个或两个景点，使用更大的 padding
-      const padding = attractionsWithCoords.length <= 2 ? [100, 100] : [50, 50];
+      const padding: [number, number] = attractionsWithCoords.length <= 2 ? [100, 100] : [50, 50];
       map.fitBounds(bounds, { padding });
     }
   }, [attractions, map]);

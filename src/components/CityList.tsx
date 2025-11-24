@@ -5,7 +5,7 @@ import { AppData } from '../types';
 import { addCity, loadData, saveData } from '../utils/storage';
 import ShareModal from './ShareModal';
 import SyncModal from './SyncModal';
-import { subscribeToCloud, generateUserId } from '../utils/firebase';
+import { subscribeToCloud } from '../utils/firebase';
 
 interface CityListProps {
   data: AppData;
