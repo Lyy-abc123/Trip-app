@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet 地图样式 */
+.leaflet-container {
+  font-family: inherit;
+}
+
+/* 自定义 Popup 样式 */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 2px solid #FFB6C1 !important;
+}
+
+.leaflet-popup-tip {
+  background: white !important;
+  border: 2px solid #FFB6C1 !important;
+  border-top: none !important;
+  border-right: none !important;
+}
+
+.leaflet-popup-close-button {
+  color: #FF69B4 !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  padding: 8px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #FF1493 !important;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #ffeef8 0%, #e8f4f8 100%);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* 可爱的滚动条样式 */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffb6c1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff91a4;
+}
+
