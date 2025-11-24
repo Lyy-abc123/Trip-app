@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Video, Plus, Trash2, X, MapPin, Edit2 } from 'lucide-react';
+import { ArrowLeft, Camera, Video, Plus, X, MapPin, Edit2 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { AppData, Coordinates } from '../types';
 import { updateAttraction, fileToBase64, loadData, saveData } from '../utils/storage';

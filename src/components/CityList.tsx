@@ -25,7 +25,6 @@ export default function CityList({ data, setData }: CityListProps) {
     const roomId = localStorage.getItem('trip-app-room-id');
     if (roomId) {
       setIsSyncing(true);
-      const userId = generateUserId();
       
       // 监听实时变化
       const unsubscribe = subscribeToCloud(

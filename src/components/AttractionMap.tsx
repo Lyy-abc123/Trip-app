@@ -15,7 +15,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // 自定义已去过和未去过的图标（卡通风格）
-const createCustomIcon = (visited: boolean, visitCount: number, name: string) => {
+const createCustomIcon = (visited: boolean, visitCount: number) => {
   // 如果 visited 为 false 或 visitCount 为 0，都视为未去过
   const isVisited = visited && visitCount > 0;
   const color = isVisited ? '#10b981' : '#9ca3af';
@@ -68,7 +68,7 @@ const createCustomIcon = (visited: boolean, visitCount: number, name: string) =>
         }
       </style>
     `,
-    iconSize: [40, 48],
+    iconSize: [40, 48] as [number, number],
     iconAnchor: [20, 48],
     popupAnchor: [0, -48],
   });
@@ -170,7 +170,7 @@ export default function AttractionMap({ attractions, cityId, onMarkerClick }: At
             <Marker
               key={attraction.id}
               position={[attraction.coordinates!.lat, attraction.coordinates!.lng]}
-              icon={createCustomIcon(attraction.visited, attraction.visitCount, attraction.name)}
+              icon={createCustomIcon(attraction.visited, attraction.visitCount)}
               eventHandlers={{
                 click: () => {
                   if (onMarkerClick) {
